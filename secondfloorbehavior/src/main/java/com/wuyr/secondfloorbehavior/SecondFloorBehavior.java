@@ -12,6 +12,7 @@ import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.Interpolator;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -99,6 +100,9 @@ public class SecondFloorBehavior extends CoordinatorLayout.Behavior<View> {
     //寄主
     private ViewGroup mParent;
 
+    private Interpolator mExitAnimationInterpolator;
+    private Interpolator mEnterAnimationInterpolator;
+
     private OnBeforeEnterSecondFloorListener mOnBeforeEnterSecondFloorListener;
     private OnEnterSecondFloorListener mOnEnterSecondFloorListener;
     private OnExitSecondFloorListener mOnExitSecondFloorListener;
@@ -172,14 +176,14 @@ public class SecondFloorBehavior extends CoordinatorLayout.Behavior<View> {
         }
         onStateChange(STATE_CLOSING);
 
-        getHeaderView().animate().setDuration(mExitDuration).translationY(0).setListener(new AnimatorListenerAdapter() {
+        smoothTranslationBy(getHeaderView(), 0, mExitDuration, mExitAnimationInterpolator, new AnimatorListenerAdapter() {
             @Override
             public void onAnimationEnd(Animator animation) {
                 onStateChange(STATE_NORMAL);
             }
-        }).start();
-        getSecondFloorView().animate().setDuration(mExitDuration).translationY(0).start();
-        getFirstFloorView().animate().setDuration(mExitDuration).translationY(0).start();
+        });
+        smoothTranslationBy(getSecondFloorView(), 0, mExitDuration, mExitAnimationInterpolator,null);
+        smoothTranslationBy(getFirstFloorView(), 0, mExitDuration, mExitAnimationInterpolator,null);
 
         if (mOnExitSecondFloorListener != null) {
             mOnExitSecondFloorListener.onExitSecondFloor();
@@ -194,6 +198,7 @@ public class SecondFloorBehavior extends CoordinatorLayout.Behavior<View> {
 
     @Override
     public boolean onTouchEvent(@NonNull CoordinatorLayout parent, @NonNull View child, @NonNull MotionEvent ev) {
+        if (parent.isInEditMode()) return true;
         if (isAnimationPlaying()) return true;
 
         //还没有开始拖动就收到了DOWN之外的事件，不作处理
@@ -447,8 +452,7 @@ public class SecondFloorBehavior extends CoordinatorLayout.Behavior<View> {
             final View secondFloorView = getSecondFloorView();
             final View firstFloorView = getFirstFloorView();
 
-            ValueAnimator animator = smoothTranslationBy(headerView, firstFloorView.getHeight(), mEnterDuration);
-            animator.addListener(new AnimatorListenerAdapter() {
+            smoothTranslationBy(headerView, firstFloorView.getHeight(), mEnterDuration, mEnterAnimationInterpolator, new AnimatorListenerAdapter() {
                 @Override
                 public void onAnimationEnd(Animator animation) {
                     onStateChange(STATE_OPENED);
@@ -457,9 +461,8 @@ public class SecondFloorBehavior extends CoordinatorLayout.Behavior<View> {
                     }
                 }
             });
-            animator.start();
-            smoothTranslationBy(secondFloorView, firstFloorView.getHeight() + headerView.getHeight(), mEnterDuration).start();
-            smoothTranslationBy(firstFloorView, firstFloorView.getHeight(), mEnterDuration).start();
+            smoothTranslationBy(secondFloorView, firstFloorView.getHeight() + headerView.getHeight(), mEnterDuration, mEnterAnimationInterpolator, null);
+            smoothTranslationBy(firstFloorView, firstFloorView.getHeight(), mEnterDuration, mEnterAnimationInterpolator, null);
 
             if (mOnEnterSecondFloorListener != null) {
                 mOnEnterSecondFloorListener.onEnterSecondFloor();
@@ -472,15 +475,21 @@ public class SecondFloorBehavior extends CoordinatorLayout.Behavior<View> {
         }
     }
 
-    private ValueAnimator smoothTranslationBy(final View target, float translation, long duration) {
+    private void smoothTranslationBy(final View target, float translation, long duration, Interpolator interpolator, Animator.AnimatorListener listener) {
         ValueAnimator animator = ValueAnimator.ofFloat(target.getTranslationY(), translation).setDuration(duration);
+        if (interpolator != null) {
+            animator.setInterpolator(interpolator);
+        }
         animator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
             @Override
             public void onAnimationUpdate(ValueAnimator animation) {
                 target.setTranslationY((Float) animation.getAnimatedValue());
             }
         });
-        return animator;
+        if (listener != null) {
+            animator.addListener(listener);
+        }
+        animator.start();
     }
 
     private void rollback() {
@@ -538,18 +547,19 @@ public class SecondFloorBehavior extends CoordinatorLayout.Behavior<View> {
 
     @Override
     public boolean onLayoutChild(@NonNull CoordinatorLayout parent, @NonNull View child, int layoutDirection) {
+        if (mParent == null) {
+            mParent = parent;
+        }
         if (!mLayoutChangeListenerAdded) {
             parent.addOnLayoutChangeListener(mOnLayoutChangeListener);
             mLayoutChangeListenerAdded = true;
-        }
-        if (mParent == null) {
-            mParent = parent;
         }
         return false;
     }
 
     private boolean mLayoutChangeListenerAdded;
     private View.OnLayoutChangeListener mOnLayoutChangeListener = new View.OnLayoutChangeListener() {
+        @SuppressWarnings("ConstantConditions")
         @Override
         public void onLayoutChange(View v, int left, int top, int right, int bottom, int oldLeft, int oldTop, int oldRight, int oldBottom) {
 
@@ -557,7 +567,7 @@ public class SecondFloorBehavior extends CoordinatorLayout.Behavior<View> {
             View secondFloorView = getSecondFloorView();
             View firstFloorView = getFirstFloorView();
 
-            if (headerView.getHeight() > 0) {
+            if (!v.isInEditMode() && headerView.getHeight() > 0) {
                 //滑动偏移量没有指定的话，就给一个默认的
                 if (mMinTriggerDistance == 0) {
                     mMinTriggerDistance = headerView.getHeight() / 2;
@@ -566,13 +576,26 @@ public class SecondFloorBehavior extends CoordinatorLayout.Behavior<View> {
                     mStartInterceptDistance = headerView.getHeight();
                 }
             }
-            //HeaderVIew放在一楼的顶部
-            int headerBottom = firstFloorView.getTop();
-            int headerTop = headerBottom - headerView.getHeight();
-            headerView.layout(headerView.getLeft(), headerTop, headerView.getRight(), headerBottom);
-            //二楼放在HeaderView的顶部
-            int secondFloorTop = headerTop - secondFloorView.getHeight();
-            secondFloorView.layout(secondFloorView.getLeft(), secondFloorTop, secondFloorView.getRight(), headerTop);
+            if (v.isInEditMode()) {
+                //布局预览中允许为null
+                int headerBottom = firstFloorView == null ? 0 : firstFloorView.getTop();
+                int headerTop = headerBottom - (headerView == null ? 0 : headerView.getHeight());
+                int secondFloorTop = headerTop - (secondFloorView == null ? 0 : secondFloorView.getHeight());
+                if (headerView != null) {
+                    headerView.layout(headerView.getLeft(), headerTop, headerView.getRight(), headerBottom);
+                }
+                if (secondFloorView != null) {
+                    secondFloorView.layout(secondFloorView.getLeft(), secondFloorTop, secondFloorView.getRight(), headerTop);
+                }
+            } else {
+                //HeaderVIew放在一楼的顶部
+                int headerBottom = firstFloorView.getTop();
+                int headerTop = headerBottom - headerView.getHeight();
+                headerView.layout(headerView.getLeft(), headerTop, headerView.getRight(), headerBottom);
+                //二楼放在HeaderView的顶部
+                int secondFloorTop = headerTop - secondFloorView.getHeight();
+                secondFloorView.layout(secondFloorView.getLeft(), secondFloorTop, secondFloorView.getRight(), headerTop);
+            }
         }
     };
 
@@ -624,7 +647,7 @@ public class SecondFloorBehavior extends CoordinatorLayout.Behavior<View> {
             throwException("SecondFloorBehavior not initialized!");
         }
         View child = mParent.getChildAt(index);
-        if (child == null) {
+        if (!mParent.isInEditMode() && child == null) {
             throwException(exceptionMessage);
         }
         return child;
@@ -681,6 +704,14 @@ public class SecondFloorBehavior extends CoordinatorLayout.Behavior<View> {
 
     public void setOnStateChangeListener(OnStateChangeListener listener) {
         mOnStateChangeListener = listener;
+    }
+
+    public void setExitAnimationInterpolator(Interpolator interpolator) {
+        mExitAnimationInterpolator = interpolator;
+    }
+
+    public void setEnterAnimationInterpolator(Interpolator interpolator) {
+        mEnterAnimationInterpolator = interpolator;
     }
 
     public float getStartInterceptDistance() {
