@@ -35,19 +35,29 @@ public class SecondFloorBehavior extends CoordinatorLayout.Behavior<View> {
     public static final int STATE_NORMAL = 0;
 
     /**
+     * 拖动中
+     */
+    public static final int STATE_DRAGGING = 1;
+
+    /**
+     * 符合触发进入二楼的条件
+     */
+    public static final int STATE_PREPARED = 2;
+
+    /**
      * 正在进入二楼
      */
-    public static final int STATE_OPENING = 1;
+    public static final int STATE_OPENING = 3;
 
     /**
      * 在二楼
      */
-    public static final int STATE_OPENED = 2;
+    public static final int STATE_OPENED = 4;
 
     /**
      * 正在离开二楼
      */
-    public static final int STATE_CLOSING = 3;
+    public static final int STATE_CLOSING = 5;
 
     private int mState = STATE_NORMAL;
 
@@ -291,6 +301,9 @@ public class SecondFloorBehavior extends CoordinatorLayout.Behavior<View> {
         } else {
             handled = true;
         }
+        if (!isAnimationPlaying()) {
+            onStateChange(STATE_NORMAL);
+        }
         return handled;
     }
 
@@ -340,6 +353,7 @@ public class SecondFloorBehavior extends CoordinatorLayout.Behavior<View> {
 
                 translationChildrenY(0);
                 mLastMoveOffset = 0;
+                onStateChange(STATE_DRAGGING);
             }
         }
         updateLastY(ev);
@@ -348,7 +362,7 @@ public class SecondFloorBehavior extends CoordinatorLayout.Behavior<View> {
 
     private void offsetChildren(float offset) {
         View headerView = getHeaderView();
-
+        onStateChange(headerView.getTranslationY() + offset >= headerView.getHeight() / 2F ? STATE_PREPARED : STATE_DRAGGING);
         //偏移的距离还没有超过HeaderView的高度
         if (headerView.getTranslationY() + offset < headerView.getHeight()) {
             translationChildrenYBy(offset);
@@ -414,6 +428,7 @@ public class SecondFloorBehavior extends CoordinatorLayout.Behavior<View> {
         mPullDownOffset = 0;
         mLastMoveOffset = 0;
         updateLastY(ev);
+        onStateChange(STATE_DRAGGING);
     }
 
     private boolean handleActionPointerDown(@NonNull MotionEvent ev) {
@@ -623,9 +638,11 @@ public class SecondFloorBehavior extends CoordinatorLayout.Behavior<View> {
     }
 
     private void onStateChange(int newState) {
-        mState = newState;
-        if (mOnStateChangeListener != null) {
-            mOnStateChangeListener.onStateChange(newState);
+        if (mState != newState) {
+            mState = newState;
+            if (mOnStateChangeListener != null) {
+                mOnStateChangeListener.onStateChange(newState);
+            }
         }
     }
 
