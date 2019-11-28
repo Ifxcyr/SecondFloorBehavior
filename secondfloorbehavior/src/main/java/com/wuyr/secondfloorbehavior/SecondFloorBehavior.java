@@ -182,8 +182,8 @@ public class SecondFloorBehavior extends CoordinatorLayout.Behavior<View> {
                 onStateChange(STATE_NORMAL);
             }
         });
-        smoothTranslationBy(getSecondFloorView(), 0, mExitDuration, mExitAnimationInterpolator,null);
-        smoothTranslationBy(getFirstFloorView(), 0, mExitDuration, mExitAnimationInterpolator,null);
+        smoothTranslationBy(getSecondFloorView(), 0, mExitDuration, mExitAnimationInterpolator, null);
+        smoothTranslationBy(getFirstFloorView(), 0, mExitDuration, mExitAnimationInterpolator, null);
 
         if (mOnExitSecondFloorListener != null) {
             mOnExitSecondFloorListener.onExitSecondFloor();
@@ -462,7 +462,7 @@ public class SecondFloorBehavior extends CoordinatorLayout.Behavior<View> {
                 }
             });
             smoothTranslationBy(secondFloorView, firstFloorView.getHeight() + headerView.getHeight(), mEnterDuration, mEnterAnimationInterpolator, null);
-            smoothTranslationBy(firstFloorView, firstFloorView.getHeight(), mEnterDuration, mEnterAnimationInterpolator, null);
+            smoothTranslationBy(firstFloorView, firstFloorView.getHeight(), mEnterDuration / 2, mEnterAnimationInterpolator, null);
 
             if (mOnEnterSecondFloorListener != null) {
                 mOnEnterSecondFloorListener.onEnterSecondFloor();
