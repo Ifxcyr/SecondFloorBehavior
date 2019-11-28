@@ -783,39 +783,6 @@ public class SecondFloorBehavior extends CoordinatorLayout.Behavior<View> {
         return mState;
     }
 
-
-    interface OnBeforeEnterSecondFloorListener {
-        /**
-         * 进入二楼之前
-         *
-         * @return 是否允许本次进入二楼，true: 允许，false: 拒绝
-         */
-        boolean onBeforeEnterSecondFloor();
-    }
-
-    interface OnEnterSecondFloorListener {
-        /**
-         * 进入二楼
-         */
-        void onEnterSecondFloor();
-    }
-
-    interface OnExitSecondFloorListener {
-        /**
-         * 退出二楼
-         */
-        void onExitSecondFloor();
-    }
-
-    interface OnStateChangeListener {
-        /**
-         * 状态变更
-         *
-         * @param state 新状态
-         */
-        void onStateChange(int state);
-    }
-
     /**
      * 参考自 {@link View.DeclaredOnClickListener}
      */

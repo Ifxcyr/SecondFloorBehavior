@@ -5,7 +5,7 @@
 ### 使用方式:
 #### 添加依赖:
 ```
-implementation 'com.wuyr:secondfloorbehavior:1.0.3'
+implementation 'com.wuyr:secondfloorbehavior:1.0.4'
 ```
 
 ### APIs:
