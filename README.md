@@ -98,7 +98,9 @@ implementation 'com.wuyr:secondfloorbehavior:1.0.4'
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
 ```
 
-### Demo下载: 敬请期待。。。
+### Demo下载: [app-debug.apk](https://github.com/wuyr/SecondFloorBehavior/raw/master/app-debug.apk)
 ### Demo源码地址: <https://github.com/wuyr/SecondFloorBehavior>
 
-### 效果图: 敬请期待。。。
+### 效果图:
+![preview](https://github.com/wuyr/SecondFloorBehavior/raw/master/previews/preview1.gif) ![preview](https://github.com/wuyr/SecondFloorBehavior/raw/master/previews/preview2.gif)
+![preview](https://github.com/wuyr/SecondFloorBehavior/raw/master/previews/preview3.gif) ![preview](https://github.com/wuyr/SecondFloorBehavior/raw/master/previews/preview4.gif)
